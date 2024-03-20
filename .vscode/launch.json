@@ -1,0 +1,74 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": ".NET Core Attach",
+            "type": "coreclr",
+            "request": "attach"
+        },
+        {
+            "name": "Frontend",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm run dev",
+            "cwd": "${workspaceFolder}/frontend",
+        },
+        {
+            "name": "Identity.Api",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/Identity.Api/bin/Debug/net8.0/Identity.Api.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/Identity.Api",
+            "stopAtEntry": false,
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+            },
+        },
+        {
+            "name": "Files.Api",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/Files.Api/bin/Debug/net8.0/Files.Api.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/Files.Api",
+            "stopAtEntry": false,
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+            },
+        },
+    ],
+    "compounds": [
+        {
+            "name": "Frontend+Identity.Api",
+            "configurations": [
+                "Frontend",
+                "Identity.Api",
+            ],
+        },
+        {
+            "name": "Frontend+Files.Api",
+            "configurations": [
+                "Frontend",
+                "Files.Api",
+            ],
+        },
+        {
+            "name": "Frontend+Files.Api+Identity.Api",
+            "configurations": [
+                "Frontend",
+                "Identity.Api",
+                "Files.Api",
+            ],
+        },
+        {
+            "name": "Files.Api+Identity.Api",
+            "configurations": [
+                "Files.Api",
+                "Identity.Api",
+            ],
+        },
+    ]
+}

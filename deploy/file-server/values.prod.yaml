@@ -1,0 +1,262 @@
+deployments:
+  files:
+    enabled: true
+    replicaCount: 1
+    strategy: Recreate
+    image:
+      repository: smirra/myprivaterepo
+      tag: files
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: regcred
+    containerPort: 8080
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: http
+    readinessProbe:
+      httpGet:
+        path: /healthz
+        port: http
+    volumes:
+      - name: fs-storage
+        type: pvc
+        mountPath: /files
+      - name: jwt-privkey
+        type: secret
+        readOnly: true
+        mountPath: /app/certs
+    envFrom:
+      - secretRef: files-env-secret
+    env:
+      - name: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - name: FILESERVER_IDENTITY_URL
+        value: http://identity
+      - name: FILESERVER_JWT_AUDIENCE
+        value: http://identity
+      - name: FILESERVER_JWT_ISSUER
+        value: http://files
+      - name: FILESERVER_JWT_PRIVATEKEYPATH
+        value: certs/private.pem
+      - name: FILESERVER_STORAGEPATH
+        value: /files
+      - name: FILESERVER_BODY_SIZE_LIMIT_MB
+        value: "5"
+    initContainers:
+      - name: db-is-isready
+        image: postgres:alpine
+        imagePullPolicy: IfNotPresent
+        command:
+          - sh
+          - -c
+          - |
+            until pg_isready -h db-sts-0.db.default.svc.cluster.local -U postgres && wget -q --spider http://identity/healthz 2>/dev/null; do 
+              echo "Waiting for services to become available..."
+              sleep 10
+            done
+  identity:
+    enabled: true
+    replicaCount: 1
+    strategy: Recreate
+    image:
+      repository: smirra/myprivaterepo
+      tag: identity
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: regcred
+    containerPort: 8080
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: http
+    readinessProbe:
+      httpGet:
+        path: /healthz
+        port: http
+    volumes:
+      - name: jwt-pubkey
+        type: secret
+        readOnly: true
+        mountPath: /app/certs
+    envFrom:
+      - secretRef: identity-env-secret
+      - secretRef: pw-obf-secret
+    env:
+      - name: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - name: FILESERVER_JWT_AUDIENCE
+        value: http://identity
+      - name: FILESERVER_JWT_ISSUER
+        value: http://files
+      - name: FILESERVER_JWT_PUBLICKEYPATH
+        value: certs/public.pem
+    initContainers:
+      - name: db-isready
+        image: postgres:alpine
+        imagePullPolicy: IfNotPresent
+        command:
+          - sh
+          - -c
+          - |
+            until pg_isready -h db-sts-0.db.default.svc.cluster.local -U postgres; do
+              echo "Waiting for db to become available...";
+              sleep 10;
+            done
+  frontend:
+    enabled: true
+    replicaCount: 1
+    strategy: Recreate
+    image:
+      repository: smirra/myprivaterepo
+      tag: frontend
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: regcred
+    containerPort: 3000
+    livenessProbe:
+      httpGet:
+        path: /
+        port: http
+    readinessProbe:
+      httpGet:
+        path: /
+        port: http
+    env:
+      - name: INTERNAL_BASE_URL
+        value: http://frontend
+      - name: INTERNAL_BASE_URL_FILES
+        value: http://files
+      - name: INTERNAL_BASE_URL_IDENTITY
+        value: http://identity
+  adminer:
+    enabled: true
+    replicaCount: 1
+    strategy: Recreate
+    image:
+      repository: smirra/myprivaterepo
+      tag: adminer
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: regcred
+    containerPort: 9000
+    livenessProbe:
+      exec:
+        command:
+          - php-fpm-healthcheck
+    readinessProbe:
+      exec:
+        command:
+          - php-fpm-healthcheck
+    env:
+      - name: ADMINER_DEFAULT_DB_DRIVER
+        value: pgsql
+      - name: ADMINER_DESIGN
+        value: pepa-linha
+      - name: ADMINER_PLUGINS
+        value: tables-filter
+      - name: ADMINER_DEFAULT_DB_HOST
+        value: db-sts-0.db.default.svc.cluster.local
+
+statefulSets:
+  db:
+    enabled: true
+    replicaCount: 1
+    updateStrategyType: OnDelete
+    image:
+      repository: smirra/myprivaterepo
+      tag: postgres
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: regcred
+    containerPort: 5432
+    livenessProbe:
+      exec:
+        command: [ pg_isready, -U, postgres ]
+    readinessProbe:
+      exec:
+        command: [ pg_isready, -U, postgres ]
+    volumeClaimTemplates:
+      name: pgdata
+      accessModes: [ ReadWriteOnce ]
+      size: 1Gi
+      storageClassName: managed-csi-fs
+      mountPath: /var/lib/postgresql
+      subPath: data
+    envFrom:
+      - secretRef: db-env-secret
+
+services:
+  db:
+    enabled: true
+    port: 5432
+    clusterIP: None
+  files:
+    enabled: true
+  identity:
+    enabled: true
+  frontend:
+    enabled: true
+  adminer:
+    enabled: true
+
+persistentVolumeClaims:
+  fs-storage:
+    enabled: true
+    accessModes: [ ReadWriteOnce ]
+    size: 1Gi
+    storageClassName: managed-csi-fs
+  
+storageClass:
+  name: managed-csi-fs
+  provisioner: disk.csi.azure.com
+  reclaimPolicy: Delete
+  volumeBindingMode: WaitForFirstConsumer
+  allowVolumeExpansion: False
+  parameters:
+    skuname: StandardSSD_LRS
+
+ingress:
+  main-ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 1024m
+    tls:
+      - hosts:
+          - fileserver.lukasm.site
+        secretName: fileserver-tls
+    hosts:
+      - host: fileserver.lukasm.site
+        paths:
+          - path: /
+            pathType: Prefix
+            name: frontend
+          - path: /api/identity
+            pathType: Prefix
+            name: identity
+          - path: /api/files
+            pathType: Prefix
+            name: files
+  adminer:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/backend-protocol: "FCGI"
+      nginx.ingress.kubernetes.io/fastcgi-index: "index.php"
+      nginx.ingress.kubernetes.io/fastcgi-params-configmap: "adminer-fcgi-params"
+      nginx.ingress.kubernetes.io/use-regex: "true"
+      nginx.ingress.kubernetes.io/rewrite-target: "/adminer/$1"
+    tls:
+      - hosts:
+          - fileserver.lukasm.site
+        secretName: fileserver-tls
+    hosts:
+      - host: fileserver.lukasm.site
+        paths:
+          - path: /adminer/(.*)
+            pathType: ImplementationSpecific
+            name: adminer
+
+ingress-nginx:
+  enabled: true

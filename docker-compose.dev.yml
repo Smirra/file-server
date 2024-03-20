@@ -1,0 +1,53 @@
+name: fileserver-dev
+services:
+  nginx:
+    image: nginx-dev
+    build:
+      context: .
+      dockerfile: ./config/nginx/Dockerfile
+    restart: always
+    ports:
+      - 443:443
+    secrets:
+      - tls.crt
+      - tls.key
+    env_file: &envfile
+      - ./.env
+      - ./.env.dev
+    environment:
+      FRONTEND_URL: http://host.docker.internal:3000
+      IDENTITY_URL: http://host.docker.internal:5000
+      FILES_URL: http://host.docker.internal:5137
+      ADMINER_URL: http://adminer:8080
+      TLS_CERTPATH: /run/secrets/tls.crt
+      TLS_KEYPATH: /run/secrets/tls.key
+    extra_hosts:
+      - host.docker.internal:host-gateway
+  db:
+    image: postgres-dev
+    build:
+      context: .
+      dockerfile: ./config/postgres/Dockerfile
+    ports:
+      - 5432:5432
+    restart: always
+    env_file: *envfile
+    volumes:
+      - db:/var/lib/postgresql/data/
+  adminer:
+    image: adminer:fastcgi
+    restart: always
+    env_file: *envfile
+    environment:
+      ADMINER_DEFAULT_DB_DRIVER: pgsql
+      ADMINER_DESIGN: pepa-linha 
+      ADMINER_PLUGINS: tables-filter
+      ADMINER_DEFAULT_DB_HOST: db
+volumes:
+  db:
+    driver: local
+secrets:
+  tls.crt:
+    file: ./certs/tls.crt
+  tls.key:
+    file: ./certs/tls.key

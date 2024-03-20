@@ -1,0 +1,136 @@
+{{- range $key, $_ := .Values.deployments }}
+{{ if .enabled -}}
+{{- $resourceName := include "fileserver.resourcename" (dict "nameOverride" .nameOverride "defaultName" $key) -}}
+{{- $labels := include "fileserver.labels" (dict "Chart" $.Chart "Release" $.Release "resourceName" $resourceName) -}}
+{{- $selectorLabels := include "fileserver.selectorLabels" (dict "Release" $.Release "resourceName" $resourceName) -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $resourceName -}}-deploy
+  labels:
+    {{- $labels | nindent 4 }}
+spec:
+  replicas: {{ .replicaCount }}
+  selector:
+    matchLabels:
+      {{- $selectorLabels | nindent 6 }}
+  {{- if .strategyType }}
+  strategy:
+    type: {{ .strategyType }}
+  {{- end }}
+  template:
+    metadata:
+      {{- with .podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- $labels | nindent 8 }}
+        {{- with .podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .podSecurityContext }}
+      securityContext:
+        {{- toYaml .podSecurityContext | nindent 8 }}
+      {{- end }}
+      {{- with .initContainers }}
+      initContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ $resourceName }}
+          {{- if .env }}
+          env:
+            {{- toYaml .env | nindent 12 -}}
+          {{- end -}}
+          {{- with .envFrom }}
+          envFrom:
+            {{- range . -}}
+            {{- if .configMapRef }}
+            - configMapRef:
+                name: {{ .configMapRef }}
+                {{- if .optional }}
+                optional: {{ .optional }}
+                {{- end -}}
+            {{- else if .secretRef }}
+            - secretRef:
+                name: {{ .secretRef }}
+                {{- if .optional }}
+                optional: {{ .optional }}
+                {{- end -}}
+            {{- end -}}
+            {{- end -}}
+          {{- end }}
+          image: {{ .image.repository -}}:{{- .image.tag }}
+          imagePullPolicy: {{ .image.pullPolicy }}
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ .containerPort }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .readinessProbe | nindent 12 }}
+          {{- with .volumes }}
+          volumeMounts:
+            {{- range . }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              {{- if .subPath }}
+              subPath: {{ .subPath }}
+              {{- end -}}
+              {{- if .readOnly }}
+              readOnly: {{ .readOnly }} 
+              {{- end -}}
+            {{- end -}}
+          {{- end -}}
+      {{- if .restartPolicy }}
+      restartPolicy: {{ .restartPolicy }}
+      {{- end -}}
+      {{- with .volumes }}
+      volumes:
+      {{- range . }}
+      - name: {{ .name }}
+      {{- if or (eq .type "pvc") (eq .type "persistentVolumeClaim") }}
+        persistentVolumeClaim:
+          claimName: {{ .name }}-pvc
+      {{- else if eq .type "secret" }}
+        secret:
+          secretName: {{ .name }}
+          {{- if .optional }}
+          optional: {{ .optional }}
+          {{- end -}}
+      {{- else if or (eq .type "cm") (eq .type "configMap") }}
+        configMap:
+          name: {{ .name }}
+      {{- else if eq .type "emptyDir" -}}
+        emptyDir: {}
+      {{- else if or (eq .type "hp") (eq .type "hostPath") }}
+        hostPath:
+          path: {{ .hpPath }}
+          type: {{ .hpType }}
+      {{- end -}}
+      {{- end -}}
+      {{- end -}}
+      {{- with .nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+---
+{{- end }}

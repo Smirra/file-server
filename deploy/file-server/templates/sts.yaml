@@ -1,0 +1,103 @@
+{{- range $key, $_ := .Values.statefulSets }}
+{{ if .enabled -}}
+{{- $resourceName := include "fileserver.resourcename" (dict "nameOverride" .nameOverride "defaultName" $key) -}}
+{{- $labels := include "fileserver.labels" (dict "Chart" $.Chart "Release" $.Release "resourceName" $resourceName) -}}
+{{- $selectorLabels := include "fileserver.selectorLabels" (dict "Release" $.Release "resourceName" $resourceName) -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $resourceName -}}-sts
+  labels:
+    {{- $labels | nindent 4 }}
+spec:
+  replicas: {{ .replicaCount }}
+  selector:
+    matchLabels:
+      {{- $selectorLabels | nindent 6 }}
+  serviceName: {{ $resourceName }}
+  {{- if .updateStrategyType }}
+  updateStrategy:
+    type: {{ .updateStrategyType }}
+  {{- end }}
+  template:
+    metadata:
+      {{- with .podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- $labels | nindent 8 }}
+        {{- with .podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .podSecurityContext }}
+      securityContext:
+        {{- toYaml .podSecurityContext | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ $resourceName }}
+          {{- with .envFrom }}
+          envFrom:
+            {{- range . -}}
+            {{- if .configMapRef }}
+            - configMapRef:
+                name: {{ .configMapRef }}
+                {{- if .optional }}
+                optional: {{ .optional }}
+                {{- end -}}
+            {{- else if .secretRef }}
+            - secretRef:
+                name: {{ .secretRef }}
+                {{- if .optional }}
+                optional: {{ .optional }}
+                {{- end -}}
+            {{- end -}}
+            {{- end -}}
+          {{- end }}
+          env:
+            {{- toYaml .env | nindent 12 }}
+          image: {{ .image.repository -}}:{{- .image.tag }}
+          imagePullPolicy: {{ .image.pullPolicy }}
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ .containerPort }}
+              protocol: TCP
+          {{- with .livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .volumeClaimTemplates }}
+          volumeMounts:
+            - mountPath: {{ .mountPath }}
+              {{- if .subPath }}
+              subPath: {{ .subPath }}
+              {{- end }}
+              name: {{ .name }}
+          {{- end }}
+  {{- with .volumeClaimTemplates }}
+  volumeClaimTemplates:
+    - metadata:
+        name: {{ .name }}
+      spec:
+        accessModes: {{ .accessModes }}
+        {{- if .storageClassName }}
+        storageClassName: {{ .storageClassName }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .size }}
+  {{- end }}
+{{- end }}
+---
+{{- end }}

@@ -1,0 +1,55 @@
+{{- range $key, $_ := .Values.ingress -}}
+{{ if .enabled -}}
+{{- $resourceName := include "fileserver.resourcename" (dict "nameOverride" .nameOverride "defaultName" $key) -}}
+{{- $labels := include "fileserver.labels" (dict "Chart" $.Chart "Release" $.Release "resourceName" $resourceName) -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $resourceName }}
+  labels:
+    {{- $labels | nindent 4 }}
+  {{- with .annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .defaultBackend }}
+  defaultBackend:
+    service:
+      name: {{ .defaultBackend.name }}
+      port:
+        number: {{ .defaultBackend.port }}
+  {{- end }}
+  {{- if .ingressClassName }}
+  ingressClassName: {{ .ingressClassName }}
+  {{- end }}
+  {{- if .tls }}
+  tls:
+  {{- range .tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            {{- if .pathType }}
+            pathType: {{ .pathType }}
+            {{- end }}
+            backend:
+              service:
+                name: {{ .name }}
+                port:
+                  number: {{ .port | default 80 }}
+          {{- end }}
+    {{- end }}
+{{- end }}
+---
+{{- end }}

@@ -1,0 +1,143 @@
+x-buildsettings: &buildsettings
+    context: .
+    x-bake:
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    cache_from:
+      - type=gha
+    cache_to:
+      - type=gha
+
+name: fileserver
+services:
+  nginx:
+    image: smirra/myprivaterepo:nginx
+    build:
+      <<: *buildsettings
+      dockerfile: ./config/nginx/Dockerfile
+    ports:
+      - 443:443
+    restart: always
+    secrets:
+      - tls.crt
+      - tls.key
+    env_file: &env_file
+      - path: ./.env
+        required: false
+    environment:
+      FRONTEND_URL: http://frontend:3000
+      IDENTITY_URL: http://identity:8080
+      FILES_URL: http://files:8080
+      ADMINER_URL: http://adminer:8080
+      TLS_CERTPATH: /run/secrets/tls.crt
+      TLS_KEYPATH: /run/secrets/tls.key
+    depends_on: 
+      - frontend
+      - files
+      - identity
+  db:
+    image: smirra/myprivaterepo:postgres
+    build:
+      <<: *buildsettings
+      dockerfile: ./config/postgres/Dockerfile
+    restart: always
+    env_file: *env_file
+    volumes:
+      - db:/var/lib/postgresql/data/
+    labels:
+      kompose.image-pull-secret: regcred
+      kompose.controller.type: statefulset
+  adminer:
+    image: smirra/myprivaterepo:adminer
+    build:
+      <<: *buildsettings
+      dockerfile: ./config/adminer/Dockerfile
+    restart: always
+    environment:
+      ADMINER_DEFAULT_DB_DRIVER: pgsql
+      ADMINER_DESIGN: pepa-linha 
+      ADMINER_PLUGINS: tables-filter
+      ADMINER_DEFAULT_DB_HOST: db
+  frontend:
+    image: smirra/myprivaterepo:frontend
+    build:
+      <<: *buildsettings
+      dockerfile: ./frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_OBFUSCATE_IV: ${FILESERVER_OBFUSCATE_IV}
+        NEXT_PUBLIC_OBFUSCATE_KEY: ${FILESERVER_OBFUSCATE_KEY}
+        NEXT_PUBLIC_BASEPATH_FILES: ${NEXT_PUBLIC_BASEPATH_FILES:-/api/files}
+        NEXT_PUBLIC_BASEPATH_IDENTITY: ${NEXT_PUBLIC_BASEPATH_IDENTITY:-/api/identity}
+    restart: always
+    env_file: *env_file
+    environment:
+      INTERNAL_BASE_URL: http://frontend:3000
+      INTERNAL_BASE_URL_FILES: http://files:8080
+      INTERNAL_BASE_URL_IDENTITY: http://identity:8080
+    depends_on:
+      - files
+      - identity
+    labels:
+      kompose.image-pull-secret: regcred
+  files:
+    image: smirra/myprivaterepo:files 
+    build:
+      <<: *buildsettings
+      dockerfile: ./src/Files.Api/Dockerfile
+    restart: always
+    secrets:
+      - private.pem
+    env_file: *env_file
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production 
+      FILESERVER_STORAGEPATH: /files
+      FILESERVER_JWT_PRIVATEKEYPATH: /run/secrets/private.pem
+      FILESERVER_JWT_AUDIENCE: http://identity
+      FILESERVER_JWT_ISSUER: http://files
+      FILESERVER_IDENTITY_URL: http://identity:8080
+      FILESERVER_ConnectionStrings__FILES: ${DOCKER_ConnectionStrings__FILES}
+      FILESERVER_ConnectionStrings__KEYS_FILES: ${DOCKER_ConnectionStrings__KEYS_FILES}
+      FILESERVER_BODY_SIZE_LIMIT_MB: 10
+    volumes:
+      - fs-storage:/files
+    depends_on:
+      - db
+    labels:
+      kompose.image-pull-secret: regcred
+  identity:
+    image: smirra/myprivaterepo:identity
+    build:
+      <<: *buildsettings
+      dockerfile: ./src/Identity.Api/Dockerfile
+    restart: always
+    secrets:
+      - public.pem
+    env_file: *env_file
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      FILESERVER_JWT_PUBLICKEYPATH: /run/secrets/public.pem
+      FILESERVER_JWT_AUDIENCE: http://identity
+      FILESERVER_JWT_ISSUER: http://files
+      FILESERVER_ConnectionStrings__IDENTITY: ${DOCKER_ConnectionStrings__IDENTITY}
+      FILESERVER_ConnectionStrings__KEYS_IDENTITY: ${DOCKER_ConnectionStrings__KEYS_IDENTITY}
+    depends_on:
+      - db
+    labels:
+      kompose.image-pull-secret: regcred
+volumes:
+  db:
+    driver: local 
+  fs-storage:
+    driver: local
+  keys:
+    driver: local
+secrets:
+  private.pem:
+    file: ./certs/private.pem
+  public.pem:
+    file: ./certs/public.pem
+  tls.crt:
+    file: ./certs/tls.crt
+  tls.key:
+    file: ./certs/tls.key

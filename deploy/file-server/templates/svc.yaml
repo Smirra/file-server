@@ -1,0 +1,24 @@
+{{- range $key, $_ := .Values.services }}
+{{ if .enabled -}}
+{{- $resourceName := include "fileserver.resourcename" (dict "nameOverride" .nameOverride "defaultName" $key) -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $resourceName }}
+spec:
+  {{- if .type }}
+  type: {{ .type }}
+  {{- end }}
+  {{- if .clusterIP }}
+  clusterIP: {{ .clusterIP }}
+  {{- end }}
+  selector:
+    app.kubernetes.io/name: {{ $resourceName }}
+  ports:
+    - port: {{ .port | default 80 }}
+      targetPort: http
+      protocol: TCP
+      name: {{ $resourceName }}
+{{- end }}
+---
+{{- end }}
