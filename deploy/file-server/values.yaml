@@ -2,7 +2,7 @@ deployments:
   files:
     enabled: true
     replicaCount: 1
-    strategy: Recreate
+    strategy: RollingUpdate
     image:
       repository: smirra/myprivaterepo
       tag: files
@@ -58,7 +58,7 @@ deployments:
   identity:
     enabled: true
     replicaCount: 1
-    strategy: Recreate
+    strategy: RollingUpdate
     image:
       repository: smirra/myprivaterepo
       tag: identity
@@ -106,7 +106,7 @@ deployments:
   frontend:
     enabled: true
     replicaCount: 1
-    strategy: Recreate
+    strategy: RollingUpdate
     image:
       repository: smirra/myprivaterepo
       tag: frontend
@@ -132,7 +132,7 @@ deployments:
   adminer:
     enabled: true
     replicaCount: 1
-    strategy: Recreate
+    strategy: RollingUpdate
     image:
       repository: smirra/myprivaterepo
       tag: adminer
@@ -162,7 +162,7 @@ statefulSets:
   db:
     enabled: true
     replicaCount: 1
-    updateStrategyType: OnDelete
+    updateStrategyType: RollingUpdate
     image:
       repository: smirra/myprivaterepo
       tag: postgres
@@ -221,7 +221,7 @@ ingress:
     enabled: true
     ingressClassName: nginx
     annotations:
-      nginx.ingress.kubernetes.io/proxy-body-size: 1024m
+      nginx.ingress.kubernetes.io/proxy-body-size: 10m
     tls:
       - hosts:
           - fileserver.lukasm.site
