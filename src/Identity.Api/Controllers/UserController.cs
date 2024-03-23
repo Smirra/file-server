@@ -3,7 +3,6 @@ using System.Text;
 using Identity.Api.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Swashbuckle.AspNetCore.Filters;
 
 namespace Identity.Api.Controllers;
 
@@ -35,12 +34,12 @@ public class UserController : ControllerBase
 
     [TempData]
     public string? ErrorMessage { get; set; }
-    
+
     public class UserDto
     {
-        public string UserName { get; set; } = "";
-        public string FirstName { get; set; } = "";
-        public bool IsAdmin { get; set; }
+        public string UserName { get; set; } = null!;
+        public string? FirstName { get; set; } = "";
+        public bool? IsAdmin { get; set; } = false;
     }
 
     [HttpPost("signin")]
@@ -49,7 +48,7 @@ public class UserController : ControllerBase
     {
         var user = await _signInManager.UserManager.FindByEmailAsync(input.Email);
 
-        if (user?.UserName != null)
+        if (user != null)
         {
             if (obfuscate)
             {
@@ -63,7 +62,11 @@ public class UserController : ControllerBase
                 }
             }
 
-            var result = await _signInManager.PasswordSignInAsync(user.UserName, input.Password, input.RememberMe, lockoutOnFailure: false);
+            var result = await _signInManager.PasswordSignInAsync(user.UserName!, input.Password, input.RememberMe, lockoutOnFailure: false);
+            if (result.IsLockedOut)
+            {
+                return Forbid("Account is locked.");
+            }
             if (result.Succeeded)
             {
                 _logger.LogInformation("User logged in.");
@@ -71,7 +74,7 @@ public class UserController : ControllerBase
 
                 var userDto = new UserDto
                 {
-                    UserName = user.UserName ?? "",
+                    UserName = user.UserName!,
                     FirstName = user.FirstName,
                     IsAdmin = isAdmin,
                 };
@@ -82,13 +85,9 @@ public class UserController : ControllerBase
                 });
 
             }
-            if (result.IsLockedOut)
-            {
-                return BadRequest("Account is locked out.");
-            }
         }
 
-        return BadRequest("Invalid attempt.");
+        return Unauthorized("Wrong email or password.");
     }
 
     [HttpPost("signout")]

@@ -2,7 +2,7 @@
 
 import { handleRegistering } from "./actions";
 import { useState, useTransition } from "react";
-import InputErrorMessage from "../input-error-msg";
+import InputErrorMessage from "../../../ui/input-error-msg";
 import { useRouter } from "next/navigation";
 import { obfuscate } from "@/app/lib/obfuscate";
 
