@@ -3,9 +3,9 @@ Dynamic default name based on the parent key or use nameOverride if provided.
 */}}
 {{- define "fileserver.resourcename" -}}
 {{- if .nameOverride -}}
-{{- printf "%s" .nameOverride -}}
+{{- printf "%s-%s" .Release.Name .nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- printf "%s" .defaultName -}}
+{{- printf "%s-%s" .Release.Name .defaultName | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 {{- end }}
 

@@ -3,7 +3,7 @@ run-name: Building and deploying to AKS 🚀!!!
 
 on:
   push:
-    branches: [ main, dev/main ] 
+    branches: [ main ] 
 
 env:
   FILESERVER_OBFUSCATE_IV: ${{ secrets.FILESERVER_OBFUSCATE_IV }}
@@ -44,6 +44,7 @@ jobs:
           helmChart: ./deploy/file-server
           helm-version: latest
           releaseName: prod
+          namespace: prod
         id: helm
       - name: Deploy to AKS
         uses: azure/k8s-deploy@v5

@@ -1,12 +1,13 @@
 {{- range $key, $_ := .Values.statefulSets }}
 {{ if .enabled -}}
-{{- $resourceName := include "fileserver.resourcename" (dict "nameOverride" .nameOverride "defaultName" $key) -}}
+{{- $resourceName := include "fileserver.resourcename" (dict "Release" $.Release "nameOverride" .nameOverride "defaultName" $key) -}}
 {{- $labels := include "fileserver.labels" (dict "Chart" $.Chart "Release" $.Release "resourceName" $resourceName) -}}
 {{- $selectorLabels := include "fileserver.selectorLabels" (dict "Release" $.Release "resourceName" $resourceName) -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ $resourceName -}}-sts
+  namespace: {{ $.Release.Namespace }}
   labels:
     {{- $labels | nindent 4 }}
 spec:

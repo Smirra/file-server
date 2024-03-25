@@ -1,10 +1,11 @@
 {{- range $key, $_ := .Values.persistentVolumeClaims }}
 {{ if .enabled -}}
-{{- $resourceName := include "fileserver.resourcename" (dict "nameOverride" .nameOverride "defaultName" $key) -}}
+{{- $resourceName := include "fileserver.resourcename" (dict "Release" $.Release "nameOverride" .nameOverride "defaultName" $key) -}}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ $resourceName -}}-pvc
+  namespace: {{ $.Release.Namespace }}
 spec:
   {{- if .storageClassName }}
   storageClassName: {{ .storageClassName }}

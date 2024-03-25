@@ -19,6 +19,8 @@ persistentVolumeClaims:
 
 storageClass: null
 
+issuers: null
+
 ingress:
   main-ingress:
     annotations:

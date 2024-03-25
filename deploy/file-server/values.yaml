@@ -19,7 +19,7 @@ deployments:
         path: /healthz
         port: http
     volumes:
-      - name: fs-storage
+      - name: prod-fs-storage
         type: pvc
         mountPath: /files
       - name: jwt-privkey
@@ -32,11 +32,11 @@ deployments:
       - name: ASPNETCORE_ENVIRONMENT
         value: Production
       - name: FILESERVER_IDENTITY_URL
-        value: http://identity
+        value: http://prod-identity
       - name: FILESERVER_JWT_AUDIENCE
-        value: http://identity
+        value: http://prod-identity
       - name: FILESERVER_JWT_ISSUER
-        value: http://files
+        value: http://prod-files
       - name: FILESERVER_JWT_PRIVATEKEYPATH
         value: certs/private.pem
       - name: FILESERVER_STORAGEPATH
@@ -51,7 +51,7 @@ deployments:
           - sh
           - -c
           - |
-            until pg_isready -h db-sts-0.db.default.svc.cluster.local -U postgres && wget -q --spider http://identity/healthz 2>/dev/null; do 
+            until pg_isready -h prod-db-sts-0.prod-db.file-server.svc.cluster.local -U postgres && wget -q --spider http://prod-identity/healthz 2>/dev/null; do 
               echo "Waiting for services to become available..."
               sleep 10
             done
@@ -86,9 +86,9 @@ deployments:
       - name: ASPNETCORE_ENVIRONMENT
         value: Production
       - name: FILESERVER_JWT_AUDIENCE
-        value: http://identity
+        value: http://prod-identity
       - name: FILESERVER_JWT_ISSUER
-        value: http://files
+        value: http://prod-files
       - name: FILESERVER_JWT_PUBLICKEYPATH
         value: certs/public.pem
     initContainers:
@@ -99,7 +99,7 @@ deployments:
           - sh
           - -c
           - |
-            until pg_isready -h db-sts-0.db.default.svc.cluster.local -U postgres; do
+            until pg_isready -h prod-db-sts-0.prod-db.file-server.svc.cluster.local -U postgres; do
               echo "Waiting for db to become available...";
               sleep 10;
             done
@@ -124,11 +124,11 @@ deployments:
         port: http
     env:
       - name: INTERNAL_BASE_URL
-        value: http://frontend
+        value: http://prod-frontend
       - name: INTERNAL_BASE_URL_FILES
-        value: http://files
+        value: http://prod-files
       - name: INTERNAL_BASE_URL_IDENTITY
-        value: http://identity
+        value: http://prod-identity
   adminer:
     enabled: true
     replicaCount: 1
@@ -156,7 +156,7 @@ deployments:
       - name: ADMINER_PLUGINS
         value: tables-filter
       - name: ADMINER_DEFAULT_DB_HOST
-        value: db-sts-0.db.default.svc.cluster.local
+        value: prod-db-sts-0.prod-db.file-server.svc.cluster.local
 
 statefulSets:
   db:
@@ -231,13 +231,13 @@ ingress:
         paths:
           - path: /
             pathType: Prefix
-            name: frontend
+            name: prod-frontend
           - path: /api/identity
             pathType: Prefix
-            name: identity
+            name: prod-identity
           - path: /api/files
             pathType: Prefix
-            name: files
+            name: prod-files
   adminer:
     enabled: true
     ingressClassName: nginx
@@ -256,7 +256,8 @@ ingress:
         paths:
           - path: /adminer/(.*)
             pathType: ImplementationSpecific
-            name: adminer
+            name: prod-adminer
 
 ingress-nginx:
   enabled: true
+  namespace: ingress

@@ -3,6 +3,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: {{ .name }}
+  namespace: {{ $.Release.Namespace }}
 provisioner: {{ .provisioner }}
 {{- if .allowVolumeExpansion }}
 allowVolumeExpansion: {{ .allowVolumeExpansion }}
