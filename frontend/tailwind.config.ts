@@ -8,6 +8,7 @@ const config: Config = {
     extend: {
       transitionTimingFunction: {
         'in-bounce': 'cubic-bezier(.47,1.64,.41,.8)',
+        'out-bounce': 'cubic-bezier(.34, -.6, .74, 1.6)',
       },
       boxShadow: {
         'inner-md': 'inset 0 4px 6px -1px rgba(0, 0, 0, 0.1), inset 0 2px 4px -1px rgba(0, 0, 0, 0.06)',

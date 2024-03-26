@@ -13,7 +13,7 @@ export default function SidebarLayout({
                     <Links links={sidebarLinks} />
                 </nav>
             </div>
-            <div className='h-full w-[100vw] pl-24 flex pt-32 justify-center bg-blue-100 bg-opacity-25 border-t-2 border-gray-400 shadow-inner-md overflow-auto'>
+            <div className='main-window pl-24 pt-32 overflow-auto'>
                 {children}
             </div>
         </>

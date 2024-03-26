@@ -8,13 +8,13 @@ import { useState } from "react";
 
 export default function SignInForm() {
     const router = useRouter();
-    const [alertMsg, setAlertMsg] = useState({ title: '', rspMsg: '' });
+    const [alertMsg, setAlertMsg] = useState({ title: '', body: '', show: false });
     
     const formAction = (async (formData: FormData) => {
         const obfuscatedPw = obfuscate(formData.get('password') as string);
         formData.set('password', obfuscatedPw);
-
         let res = await handleSignin(formData);
+        
         if (res.user) {
             localStorage.setItem('user', JSON.stringify({ userName: res.user.userName, isAdmin: res.user.isAdmin }));
 
@@ -22,19 +22,15 @@ export default function SignInForm() {
         }
 
         if (res.statusCode) {
-            setAlertMsg({ title: 'Login failed.', rspMsg: res.rspMsg });
-        }
-
-        if (res.error) {
-            throw new Error(res.error);
+            setAlertMsg({ title: 'Login failed', body: res.rspMsg , show: true });
         }
     })
 
     return (
         <div className="relative">
-            <AlertMessage message={alertMsg} />
+            <AlertMessage className={"bottom-[21em]"} message={alertMsg} />
             <form className="border-2 border-gray-400 p-10 shadow-md bg-white rounded-2xl"
-                action={formAction} onChange={() => setAlertMsg({title: '', rspMsg: ''})}>
+                action={formAction} onChange={() => setAlertMsg({...alertMsg, show: false})}>
                 <div className="mb-4">
                     <label className="block">Email:</label>
                     <input className="shadow appearance-none border rounded w-full py-2 px-3 

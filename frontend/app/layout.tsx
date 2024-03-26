@@ -11,7 +11,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Header />
-        <div className="w-[100vw] h-[calc(100vh-theme('spacing.header-h'))]">
+        <div className="w-[100vw] h-[calc(100dvh-theme('spacing.header-h'))]">
           {children}
         </div>
       </body>

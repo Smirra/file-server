@@ -44,7 +44,6 @@ jobs:
           helmChart: ./deploy/file-server
           helm-version: latest
           releaseName: prod
-          namespace: prod
         id: helm
       - name: Deploy to AKS
         uses: azure/k8s-deploy@v5

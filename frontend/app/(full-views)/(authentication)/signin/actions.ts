@@ -16,11 +16,6 @@ export async function handleSignin(formData: FormData) {
         cache: 'no-store'
     })
 
-    if (rsp.status == 401 || rsp.status == 403) {
-        let rspMsg = await rsp.text()
-        return { statusCode: rsp.status, rspMsg }
-    }
-
     if (rsp.ok) {
         const sessionCookie = rsp.headers.getSetCookie().find(cookie => cookie.startsWith('session'))
         let parsedCookie = parseCookie(sessionCookie)
@@ -34,5 +29,14 @@ export async function handleSignin(formData: FormData) {
         return await rsp.json()
     }
 
-    throw new Error(`HTTP error! Status: ${rsp.status}`)
+    switch (true) {
+        case rsp.status == 401:
+            return { statusCode: rsp.status, rspMsg: 'Invalid credentials' }
+        case rsp.status == 403:
+            return { statusCode: rsp.status, rspMsg: 'Account locked' }
+        case rsp.status >= 500 && rsp.status <= 599:
+            return { statusCode: rsp.status, rspMsg: 'Server error' }
+        default:
+            return { statusCode: rsp.status, rspMsg: 'Error'};
+    }
 }

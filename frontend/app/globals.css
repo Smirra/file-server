@@ -2,7 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-a {
-  @apply text-blue-500;
-  @apply hover:text-blue-800
+@layer base {
+  a {
+    @apply text-blue-500;
+    @apply hover:text-blue-800
+  }
+}
+
+@layer components {
+  .main-window {
+    @apply  bg-blue-100 bg-opacity-25 border-t-2 border-gray-400 shadow-inner-md w-full h-full flex justify-center;
+  }
 }
