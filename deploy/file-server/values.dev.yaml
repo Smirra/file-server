@@ -52,6 +52,3 @@ ingress:
           - path: /adminer/(.*)
             pathType: ImplementationSpecific
             name: adminer
-
-ingress-nginx:
-  enabled: false

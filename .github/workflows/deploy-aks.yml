@@ -3,31 +3,67 @@ run-name: Building and deploying to AKS 🚀!!!
 
 on:
   push:
-    branches: [ main ] 
+    branches:
+      - main
 
 env:
   FILESERVER_OBFUSCATE_IV: ${{ secrets.FILESERVER_OBFUSCATE_IV }}
   FILESERVER_OBFUSCATE_KEY: ${{ secrets.FILESERVER_OBFUSCATE_KEY }}
 
 jobs:
-  Build-and-Push-Images:
+  Check-Changes-Build-and-Push-Images:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        apps:
+          - path: |
+              ./src/Files.Api/**
+              ./src/Shared/**
+            image: files
+          - path: |
+              ./src/Identity.Api/**
+              ./src/Shared/**
+            image: identity
+          - path: ./frontend/**
+            image: frontend
+          - path: ./config/adminer/**
+            image: adminer
+          - path: ./config/postgres/**
+            image: postgres
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for changes in ${{ matrix.apps.image }}
+        uses: tj-actions/changed-files@v44
+        id: changed-files
+        with:
+          files: ${{ matrix.apps.path }}
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Set up QEMU
+        if: steps.changed-files.outputs.any_changed == 'true'
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
+        if: steps.changed-files.outputs.any_changed == 'true'
         uses: docker/setup-buildx-action@v3
       - name: Build and push
+        if: steps.changed-files.outputs.any_changed == 'true'
         uses: docker/bake-action@v4
         with:
+          targets: ${{ matrix.apps.image }}
           push: true
+  Deploy-to-AKS:
+    runs-on: ubuntu-latest
+    needs: Check-Changes-Build-and-Push-Images
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -42,10 +78,12 @@ jobs:
         with:
           renderEngine: helm
           helmChart: ./deploy/file-server
-          helm-version: latest
+          helm-version: 'latest'
           releaseName: prod
+          namespace: file-server
         id: helm
       - name: Deploy to AKS
         uses: azure/k8s-deploy@v5
         with:
           manifests: ${{ steps.helm.outputs.manifestsBundle }}
+          namespace: file-server

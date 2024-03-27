@@ -1,5 +1,5 @@
-{{- range $key, $_ := .Values.services }}
-{{ if .enabled -}}
+{{ range $key, $_ := .Values.services -}}
+{{- if .enabled -}}
 {{- $resourceName := include "fileserver.resourcename" (dict "Release" $.Release "nameOverride" .nameOverride "defaultName" $key) -}}
 apiVersion: v1
 kind: Service

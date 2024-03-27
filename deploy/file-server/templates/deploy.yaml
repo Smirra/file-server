@@ -1,5 +1,5 @@
-{{- range $key, $_ := .Values.deployments }}
-{{ if .enabled -}}
+{{ range $key, $_ := .Values.deployments -}}
+{{- if .enabled -}}
 {{- $resourceName := include "fileserver.resourcename" (dict "Release" $.Release "nameOverride" .nameOverride "defaultName" $key) -}}
 {{- $labels := include "fileserver.labels" (dict "Chart" $.Chart "Release" $.Release "resourceName" $resourceName) -}}
 {{- $selectorLabels := include "fileserver.selectorLabels" (dict "Release" $.Release "resourceName" $resourceName) -}}

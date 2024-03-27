@@ -1,6 +1,3 @@
-Release:
-  namespace: file-server
-
 deployments:
   files:
     enabled: true
@@ -260,7 +257,3 @@ ingress:
           - path: /adminer(?:/?|$)(.*)
             pathType: ImplementationSpecific
             name: prod-adminer
-
-ingress-nginx:
-  enabled: true
-  namespace: ingress-nginx

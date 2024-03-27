@@ -1,9 +1,12 @@
-{{- with .Values.storageClass }}
+{{ with .Values.storageClass -}}
+{{- $labels := include "fileserver.labels" (dict "Chart" $.Chart "Release" $.Release "resourceName" .name) -}}
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: {{ .name }}
   namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- $labels | nindent 4 }}
 provisioner: {{ .provisioner }}
 {{- if .allowVolumeExpansion }}
 allowVolumeExpansion: {{ .allowVolumeExpansion }}

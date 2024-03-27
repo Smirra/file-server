@@ -1,5 +1,5 @@
-{{- range $key, $_ := .Values.ingress -}}
-{{ if .enabled -}}
+{{ range $key, $_ := .Values.ingress -}}
+{{- if .enabled -}}
 {{- $resourceName := include "fileserver.resourcename" (dict "Release" $.Release "nameOverride" .nameOverride "defaultName" $key) -}}
 {{- $labels := include "fileserver.labels" (dict "Chart" $.Chart "Release" $.Release "resourceName" $resourceName) -}}
 apiVersion: networking.k8s.io/v1
@@ -49,8 +49,8 @@ spec:
                 name: {{ .name }}
                 port:
                   number: {{ .port | default 80 }}
-          {{- end }}
-    {{- end }}
+          {{- end -}}
+    {{- end -}}
 {{- end }}
 ---
 {{- end }}
