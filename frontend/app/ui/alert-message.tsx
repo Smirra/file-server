@@ -13,10 +13,11 @@ export default function AlertMessage({
 
     return (
             <CSSTransition nodeRef={nodeRef} in={show} timeout={300} unmountOnExit classNames={{
-                enter: 'scale-100',
+                enter: 'ease-in-bounce scale-100',
                 enterDone: 'scale-100',
+                exit: 'ease-out-bounce',
             }}>
-                <div ref={nodeRef} className={`${className} scale-0 transition-all ease-in-bounce absolute w-full bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-2xl`}
+                <div ref={nodeRef} className={`${className} scale-0 transition-transform absolute w-full bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-2xl`}
                     role="alert" >
                     <strong className="font-bold">{title}</strong>
                     <p className="">{body}</p>

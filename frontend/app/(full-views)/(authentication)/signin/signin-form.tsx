@@ -28,7 +28,7 @@ export default function SignInForm() {
 
     return (
         <div className="relative">
-            <AlertMessage className={"bottom-[21em]"} message={alertMsg} />
+            <AlertMessage className="bottom-[21em]" message={alertMsg} />
             <form className="border-2 border-gray-400 p-10 shadow-md bg-white rounded-2xl"
                 action={formAction} onChange={() => setAlertMsg({...alertMsg, show: false})}>
                 <div className="mb-4">
