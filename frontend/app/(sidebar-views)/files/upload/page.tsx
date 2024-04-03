@@ -54,16 +54,16 @@ export default function Page() {
     }
 
     return (
-        <div className="w-5/6 flex flex-col gap-4">
-            <form onSubmit={handleSubmit} className="flex gap-4 items-end w-full">
+        <div className="w-5/6 max-w-[60em] h-full flex flex-col gap-4">
+            <form onSubmit={handleSubmit} className="flex max-h-72 h-2/3 gap-4 items w-full">
                 <label
-                    className="flex flex-col w-full bg-white h-64 border-dashed border-slate-400 shadow-md
+                    className="flex flex-col w-full bg-white border-dashed border-slate-400 shadow-md
                            border-2 rounded-2xl items-center justify-center
                          hover:bg-slate-50 hover:cursor-pointer transition">
                     <svg className="w-12 h-12 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
                         <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
                     </svg>
-                    <p><span className="font-semibold">Click to add</span> or drag and drop a file.</p>
+                    <p className="text-center"><span className="font-semibold">Click here</span> or drag and drop to add a file.</p>
                     <input name="file" type="file" className="hidden" onChange={handleFileChange} multiple />
                 </label>
                 <button disabled={fileRefs.length === 0}
@@ -75,8 +75,8 @@ export default function Page() {
             <TransitionGroup>
                 {fileRefs.map(({ file, nodeRef, id }) => (
                     <CSSTransition nodeRef={nodeRef} key={id} timeout={300} classNames={{
-                        enter: "max-h-[0] h-[0] border-t-[0] border-b-[0] my-[0px]",
-                        exit: "max-h-[0] h-[0] border-t-[0] border-b-[0] my-[0px]",
+                        enter: "max-h-[0] h-[0] border-t-[0] border-b-[0] my-0",
+                        exit: "max-h-[0] h-[0] border-t-[0] border-b-[0] my-0",
                     }}>
                         <div className="pb-[1px]"> {/* hack to prevent margin-collapsing */}
                             <div ref={nodeRef} className="my-2 flex transition-all ease-in-out duration-300 items-center justify-between px-4 h-14 max-h-14 overflow-hidden bg-white border-gray-400 rounded-2xl border-2 shadow-md">

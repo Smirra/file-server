@@ -4,6 +4,7 @@ import { FilesProvider } from "./files-context";
 import MultiselectMenu from "./multiselect-menu";
 import FileList from "./file-list";
 import NoFiles from "./no-files";
+import BadRsp from "./bad-rsp";
 
 export default function Page() {
 
@@ -13,6 +14,7 @@ export default function Page() {
                 <MultiselectMenu />
                 <FileList />
                 <NoFiles />
+                <BadRsp />
             </div>
         </FilesProvider>
     )

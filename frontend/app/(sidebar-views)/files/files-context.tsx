@@ -8,6 +8,7 @@ export function FilesProvider({ children }) {
             fileStates: [],
             showDeleteCheckboxes: false,
             hasNoFiles: false,
+            badRsp: {}
         });
 
     useEffect(() => {
@@ -21,7 +22,16 @@ export function FilesProvider({ children }) {
                     },
                 })
 
+            if (!res.ok) {
+                dispatch({
+                    rspStatus: { status: res.status, statusText: res.statusText },
+                    type: 'FAILED_FETCHING_FILES',
+                })
+                return;
+            }
+            
             const initFiles = await res.json()
+
 
             if (initFiles.length > 0) {
                 dispatch({
@@ -83,6 +93,11 @@ function filesReducer(state, action) {
             return {
                 ...state,
                 hasNoFiles: true,
+            }
+        case 'FAILED_FETCHING_FILES':
+            return {
+                ...state,
+                badRsp: action.rspStatus,
             }
         default:
             throw new Error('Unknown action type: ' + action.type);
